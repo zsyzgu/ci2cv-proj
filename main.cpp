@@ -1,8 +1,9 @@
-#include "utils/helpers.hpp"
-#include "utils/command-line-arguments.hpp"
-#include "utils/points.hpp"
-#include "tracker/FaceTracker.hpp"
+#include <utils/helpers.hpp>
+#include <utils/command-line-arguments.hpp>
+#include <utils/points.hpp>
+#include <tracker/FaceTracker.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/opencv.hpp>
 
 using namespace FACETRACKER;
 
@@ -19,7 +20,7 @@ struct Configuration
   int circle_shift;
 };
 
-int run_image_mode(const Configuration &cfg, const std::string& imageArg, const std::string& landmarksArg);
+int run_image_mode(const Configuration &cfg, const cv::Mat& image);
 void display_data(const Configuration &cfg, const cv::Mat &image, const std::vector<cv::Point_<double> > &points, const Pose &pose);
 
 int main(int argc, char** argv) {
@@ -29,9 +30,9 @@ int main(int argc, char** argv) {
   Configuration cfg;
   cfg.model_pathname = DefaultFaceTrackerModelPathname();
   cfg.params_pathname = DefaultFaceTrackerParamsPathname();
-  cfg.tracking_threshold = 5;
+  cfg.tracking_threshold = 1;
   cfg.window_title = "CSIRO Face Fit";
-  cfg.circle_radius = 5;
+  cfg.circle_radius = 2;
   cfg.circle_thickness = 2;
   cfg.circle_linetype = 8;
   cfg.circle_shift = 0;
@@ -47,17 +48,31 @@ int main(int argc, char** argv) {
     }
   }
 
-  return run_image_mode(cfg, imageArg, landmarksArg);
+  cv::VideoCapture capture;
+  if (!capture.open(0)) {
+    make_runtime_error("Can not open web camera");
+    return 0;
+  }
+
+  for (;;) {
+    cv::Mat frame;
+    capture >> frame;
+    if (frame.empty()) {
+      break;
+    }
+    run_image_mode(cfg, frame);
+  }
+
+  return 0;
 }
 
-int run_image_mode(const Configuration &cfg, const std::string& imageArg, const std::string& landmarksArg) {  
+int run_image_mode(const Configuration &cfg, const cv::Mat& image) {
   FaceTracker* tracker = LoadFaceTracker(cfg.model_pathname.c_str());
   FaceTrackerParams* trackerParams  = LoadFaceTrackerParams(cfg.params_pathname.c_str());
 
-  cv::Mat image;
-  cv::Mat_<uint8_t> grayImage = load_grayscale_image(imageArg.c_str(), &image);
-
-  int result = tracker->NewFrame(grayImage, trackerParams);
+  cv::Mat inp;
+  cv::cvtColor(image, inp, CV_RGB2GRAY);
+  int result = tracker->NewFrame(inp, trackerParams);
 
   std::vector<cv::Point_<double> > shape;
   Pose pose;
@@ -67,20 +82,15 @@ int run_image_mode(const Configuration &cfg, const std::string& imageArg, const 
     pose = tracker->getPose();
   }
 
-  if (landmarksArg == "") {
-    display_data(cfg, image, shape, pose);
-  } else if (shape.size() > 0) {
-    save_points(landmarksArg.c_str(), shape);
-  }
+  display_data(cfg, image, shape, pose);
+  std::cout << shape.size() << std::endl;
 
   delete tracker;
   delete trackerParams;
   return 0;
 }
 
-cv::Mat
-compute_pose_image(const Pose &pose, int height, int width)
-{
+cv::Mat compute_pose_image(const Pose &pose, int height, int width) {
   cv::Mat_<cv::Vec<uint8_t,3> > rv = cv::Mat_<cv::Vec<uint8_t,3> >::zeros(height,width);
   cv::Mat_<double> axes = pose_axes(pose);
   cv::Mat_<double> scaling = cv::Mat_<double>::eye(3,3);
@@ -91,23 +101,14 @@ compute_pose_image(const Pose &pose, int height, int width)
   }
   
   cv::Point centre(width/2, height/2);
-  // pitch
   cv::line(rv, centre, cv::Point(axes(0,0), axes(1,0)), cv::Scalar(255,0,0));
-  // yaw
   cv::line(rv, centre, cv::Point(axes(0,1), axes(1,1)), cv::Scalar(0,255,0));
-  // roll
   cv::line(rv, centre, cv::Point(axes(0,2), axes(1,2)), cv::Scalar(0,0,255));
 
   return rv;
 }
 
-void
-display_data(const Configuration &cfg,
-	     const cv::Mat &image,
-	     const std::vector<cv::Point_<double> > &points,
-	     const Pose &pose)
-{
-
+void display_data(const Configuration &cfg, const cv::Mat &image, const std::vector<cv::Point_<double> > &points, const Pose &pose) {
   cv::Scalar colour;
   if (image.type() == cv::DataType<uint8_t>::type)
     colour = cv::Scalar(255);
@@ -141,5 +142,5 @@ display_data(const Configuration &cfg,
   }
 
   cv::imshow(cfg.window_title, displayed_image);
-  char ch = cv::waitKey(0);
+  char ch = cv::waitKey(1);
 }

@@ -14,15 +14,15 @@ CC = g++
 
 #.PHONY: all clean
 
-OBJS = main.o
+OBJS = 
 
-all: main
+all: face
 
 clean:
-	rm -f *.o *~ main
+	rm -f *.o *~
 
 %.o: %.cpp
 	$(CC) -c $(INCLUDES) $+ $(OPT)
 
-main: $(OBJS)
+face: face.o
 	$(CC) $(LIBDIRS) $(LIBS) -o $@ $+ $(OPT)

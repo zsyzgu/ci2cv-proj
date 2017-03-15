@@ -1,5 +1,6 @@
 *.jpg
 *.o
-*.anno
-*.model
-main
+*.ver
+*.uv
+face
+/resource

@@ -11,10 +11,9 @@ using namespace FACETRACKER;
 using namespace AVATAR;
 
 struct Configuration {
-  std::string modelPathname;
-  std::string paramsPathname;
-  int trackingThreshold;
-  double faceBoxSize;
+  std::string model_pathname;
+  std::string params_pathname;
+  int tracking_threshold;
   std::string window_title;
   int circle_radius;
   int circle_thickness;
@@ -22,86 +21,77 @@ struct Configuration {
   int circle_shift;
 };
 
+int runImageMode(const Configuration &cfg, const cv::Mat& image, Avatar* avatar);
 void displayData(const Configuration &cfg, const cv::Mat &image, const std::vector<cv::Point_<double> > &points, const Pose &pose);
-void produceModel(std::string modelPathName, cv::Mat& image, std::vector<cv::Point_<double> >& points);
 
 int main(int argc, char** argv) {
   Configuration cfg;
-  cfg.modelPathname = DefaultFaceTrackerModelPathname();
-  cfg.paramsPathname = DefaultFaceTrackerParamsPathname();
-  cfg.trackingThreshold = 1;
-  cfg.faceBoxSize = 40;
-  cfg.window_title = "UV image";
+  cfg.model_pathname = DefaultFaceTrackerModelPathname();
+  cfg.params_pathname = DefaultFaceTrackerParamsPathname();
+  cfg.tracking_threshold = 1;
+  cfg.window_title = "CSIRO Face Fit";
   cfg.circle_radius = 2;
   cfg.circle_thickness = 2;
   cfg.circle_linetype = 8;
   cfg.circle_shift = 0;
 
-  FaceTracker* tracker = LoadFaceTracker(cfg.modelPathname.c_str());
-  FaceTrackerParams* trackerParams = LoadFaceTrackerParams(cfg.paramsPathname.c_str());
-
-  if (argc != 2) {
-    throw make_runtime_error("argv are needed.");
+  Avatar* avatar = LoadAvatar("zsyzgu.model");
+  if (!avatar)
+  throw make_runtime_error("Failed to load avatar.");
+  avatar->setAvatar(0);
+  cv::Mat_<cv::Vec<uint8_t,3> > calibration_image = cv::imread("zsyzgu.jpg");
+  std::vector<cv::Point_<double> > calibration_points;
+  std::ifstream uvFile("zsyzgu.uv");
+  double u, v;
+  while (uvFile >> u >> v) {
+    calibration_points.push_back(cv::Point_<double>(u * calibration_image.cols, (1 - v) * calibration_image.rows));
   }
-  cv::Mat image = cv::imread((std::string(argv[1]) + ".jpg").c_str());
-  cv::Mat grayImage;
-  cv::cvtColor(image, grayImage, CV_RGB2GRAY);
-  int result = tracker->NewFrame(grayImage, trackerParams);
+  avatar->Initialise(calibration_image, calibration_points);
 
-  if (result >= cfg.trackingThreshold) {
-    std::vector<cv::Point_<double> > shape = tracker->getShape();
-    Pose pose = tracker->getPose();
-    displayData(cfg, image, shape, pose);
-
-    std::ofstream outputUV((std::string(argv[1]) + ".uv").c_str());
-    for (int i = 0; i < shape.size(); i++) {
-      double x = shape[i].x / image.cols;
-      double y = 1 - shape[i].y / image.rows;
-      outputUV << x << " " << y << std::endl;
-    }
-    produceModel((std::string(argv[1]) + ".model").c_str(), image, shape);
-
-    std::vector<cv::Point3_<double> > shape3 = tracker->get3DShape();
-    std::ofstream outputVer((std::string(argv[1]) + ".ver").c_str());
-    for (int i = 0; i < shape3.size(); i++) {
-      double x = shape3[i].x / cfg.faceBoxSize;
-      double y = shape3[i].y / cfg.faceBoxSize;
-      double z = shape3[i].z / cfg.faceBoxSize;
-      outputVer << x << " " << y << " " << z << std::endl;
-    }
-  } else {
-    throw make_runtime_error("result not good enough.");
+  cv::VideoCapture capture;
+  if (!capture.open(0)) {
+    make_runtime_error("Can not open web camera");
+    return 0;
   }
 
-  delete tracker;
-  delete trackerParams;
+  for (;;) {
+    cv::Mat frame;
+    capture >> frame;
+    if (frame.empty()) {
+      break;
+    }
+    runImageMode(cfg, frame, avatar);
+  }
 
   return 0;
 }
 
-void produceModel(std::string modelPathName, cv::Mat& image, std::vector<cv::Point_<double> >& points) {
-  Avatar* abstarctModel = LoadAvatar();
-  myAvatar* model = dynamic_cast<myAvatar*>(abstarctModel);
-  assert(model);
+int runImageMode(const Configuration &cfg, const cv::Mat& image, Avatar* avatar) {
+  FaceTracker* tracker = LoadFaceTracker(cfg.model_pathname.c_str());
+  FaceTrackerParams* trackerParams  = LoadFaceTrackerParams(cfg.params_pathname.c_str());
 
-  model->_scale.clear();
-  model->_textr.clear();
-  model->_images.clear();  
-  model->_shapes.clear();
-  model->_reg.clear();
-  model->_expr.clear();
-  model->_lpupil.clear();
-  model->_rpupil.clear();
+  cv::Mat inp;
+  cv::cvtColor(image, inp, CV_RGB2GRAY);
+  int result = tracker->NewFrame(inp, trackerParams);
 
-  cv::Mat_<double> saragih_points = vectorise_points(points);
-  cv::Mat_<double> eyes;
-  model->AddAvatar(image, saragih_points, eyes);
+  std::vector<cv::Point_<double> > shape;
+  Pose pose;
 
-  std::ofstream out(modelPathName.c_str(), std::ios::out | std::ios::binary);
-  model->Write(out, true);
-  out.close();
+  if (result >= cfg.tracking_threshold) {
+    shape = tracker->getShape();
+    pose = tracker->getPose();
+    cv::Mat_<cv::Vec<uint8_t,3> > draw = image.clone();
+    avatar->Animate(draw, image, shape);
+    cv::imshow(cfg.window_title, draw);
+    char ch = cv::waitKey(1);
+  } else {
+    //cv::imshow(cfg.window_title, image);
+    displayData(cfg, image, shape, pose);
+  }
 
-  delete model;
+  delete tracker;
+  delete trackerParams;
+  return 0;
 }
 
 cv::Mat computePoseImage(const Pose &pose, int height, int width) {
@@ -156,5 +146,5 @@ void displayData(const Configuration &cfg, const cv::Mat &image, const std::vect
   }
 
   cv::imshow(cfg.window_title, displayed_image);
-  char ch = cv::waitKey(1000);
+  char ch = cv::waitKey(1);
 }

@@ -26,3 +26,6 @@ clean:
 
 face: face.o
 	$(CC) $(LIBDIRS) $(LIBS) -o $@ $+ $(OPT)
+
+cap: cap.o
+	$(CC) $(LIBDIRS) $(LIBS) -o $@ $+ $(OPT)

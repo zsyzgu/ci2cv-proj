@@ -2,5 +2,7 @@
 *.o
 *.ver
 *.uv
+*.model
 face
+cap
 /resource

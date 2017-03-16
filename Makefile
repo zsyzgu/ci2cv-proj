@@ -24,7 +24,7 @@ clean:
 %.o: %.cpp
 	$(CC) -c $(INCLUDES) $+ $(OPT)
 
-face: face.o
+face: face.o frame.o
 	$(CC) $(LIBDIRS) $(LIBS) -o $@ $+ $(OPT)
 
 cap: cap.o

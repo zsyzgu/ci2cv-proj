@@ -6,7 +6,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
 #include <fstream>
-
+#include "frame.h"
 using namespace FACETRACKER;
 using namespace AVATAR;
 
@@ -25,7 +25,7 @@ struct Configuration {
 void displayData(const Configuration &cfg, const cv::Mat &image, const std::vector<cv::Point_<double> > &points, const Pose &pose);
 void produceModel(std::string modelPathName, cv::Mat& image, std::vector<cv::Point_<double> >& points);
 
-int main(int argc, char** argv) {
+void run(char* file, cv::Mat& image, std::vector<cv::Point_<double> >& shape, std::vector<cv::Point3_<double> >& shape3) {
   Configuration cfg;
   cfg.modelPathname = DefaultFaceTrackerModelPathname();
   cfg.paramsPathname = DefaultFaceTrackerParamsPathname();
@@ -40,34 +40,27 @@ int main(int argc, char** argv) {
   FaceTracker* tracker = LoadFaceTracker(cfg.modelPathname.c_str());
   FaceTrackerParams* trackerParams = LoadFaceTrackerParams(cfg.paramsPathname.c_str());
 
-  if (argc != 2) {
-    throw make_runtime_error("argv are needed.");
-  }
-  cv::Mat image = cv::imread((std::string(argv[1]) + ".jpg").c_str());
+  image = cv::imread((std::string(file) + ".jpg").c_str());
   cv::Mat grayImage;
   cv::cvtColor(image, grayImage, CV_RGB2GRAY);
   int result = tracker->NewFrame(grayImage, trackerParams);
 
   if (result >= cfg.trackingThreshold) {
-    std::vector<cv::Point_<double> > shape = tracker->getShape();
+    shape = tracker->getShape();
     Pose pose = tracker->getPose();
     displayData(cfg, image, shape, pose);
 
-    std::ofstream outputUV((std::string(argv[1]) + ".uv").c_str());
     for (int i = 0; i < shape.size(); i++) {
-      double x = shape[i].x / image.cols;
-      double y = 1 - shape[i].y / image.rows;
-      outputUV << x << " " << y << std::endl;
+      shape[i].x = shape[i].x / image.cols;
+      shape[i].y = 1 - shape[i].y / image.rows;
     }
-    produceModel((std::string(argv[1]) + ".model").c_str(), image, shape);
+    produceModel((std::string(file) + ".model").c_str(), image, shape);
 
-    std::vector<cv::Point3_<double> > shape3 = tracker->get3DShape();
-    std::ofstream outputVer((std::string(argv[1]) + ".ver").c_str());
+    shape3 = tracker->get3DShape();
     for (int i = 0; i < shape3.size(); i++) {
-      double x = shape3[i].x / cfg.faceBoxSize;
-      double y = shape3[i].y / cfg.faceBoxSize;
-      double z = shape3[i].z / cfg.faceBoxSize;
-      outputVer << x << " " << y << " " << z << std::endl;
+      shape3[i].x = shape3[i].x / cfg.faceBoxSize;
+      shape3[i].y = shape3[i].y / cfg.faceBoxSize;
+      shape3[i].z = shape3[i].z / cfg.faceBoxSize;
     }
   } else {
     throw make_runtime_error("result not good enough.");
@@ -75,6 +68,30 @@ int main(int argc, char** argv) {
 
   delete tracker;
   delete trackerParams;
+}
+
+int main(int argc, char** argv) {
+  cv::Mat modelImage;
+  std::vector<cv::Point_<double> > modelUV;
+  std::vector<cv::Point3_<double> > vertices;
+  cv::Mat faceImage;
+  std::vector<cv::Point_<double> > faceUV;
+  if (argc >= 2) {
+    run(argv[1], modelImage, modelUV, vertices);
+  }
+  if (argc >= 3) {
+    run(argv[2], faceImage, faceUV, vertices);
+
+    std::vector<int> tris;
+    std::ifstream fin("face.tri");
+    int x;
+    while (fin >> x) {
+      tris.push_back(x);
+    }
+    Frame frame;
+    frame.start(modelImage, modelUV, tris);
+    frame.update(faceImage, faceUV, vertices);
+  }
 
   return 0;
 }
@@ -156,5 +173,5 @@ void displayData(const Configuration &cfg, const cv::Mat &image, const std::vect
   }
 
   cv::imshow(cfg.window_title, displayed_image);
-  char ch = cv::waitKey(1000);
+  cv::waitKey(500);
 }

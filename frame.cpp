@@ -75,11 +75,11 @@ void Frame::saveTris(std::string fileName, std::vector<int>& vertices) {
 }
 
 Frame::Frame() {
-
+  client.start();
 }
 
 Frame::~Frame() {
-
+  client.end();
 }
 
 void Frame::setModelImage(const cv::Mat& modelImage) {
@@ -197,10 +197,26 @@ void Frame::updateSave() {
   saveUV("Data/mouse.uv", mouseUV);
 }
 
+  void sendByteArray(char id, int len, char* data);
+  void sendIntArray(char id, std::vector<int> intArray);
+  void sendFloatArray(char id, std::vector<float> floatArray);
+  void sendImage(char id, cv::Mat image);
+  void sendPointArray(char id, std::vector<cv::Point_<double> > pointArray);
+  void sendPoint3Array(char id, std::vector<cv::Point3_<double> > point3Array);
+
 void Frame::startSend() {
-  
+  client.sendImage(0, modelImage);
+  client.sendPointArray(1, modelUV);
+  client.sendPoint3Array(2, vertices);
+  client.sendIntArray(3, tris);
 }
 
 void Frame::updateSend() {
-
+  client.sendPoint3Array(2, vertices);
+  client.sendImage(4, leftEyeImage);
+  client.sendPointArray(5, leftEyeUV);
+  client.sendImage(6, rightEyeImage);
+  client.sendPointArray(7, rightEyeUV);
+  client.sendImage(8, mouseImage);
+  client.sendPointArray(9, mouseUV);
 }

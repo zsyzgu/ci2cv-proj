@@ -167,8 +167,7 @@ void Frame::start(cv::Mat modelImage, std::vector<cv::Point_<double> > modelUV, 
   setModelImage(modelImage);
   setModelUV(modelUV);
   setTris(tris);
-  imwrite("Pictures/model.jpg", modelImage);
-  saveUV("Data/model.uv", modelUV);
+  startSave();
 }
 
 void Frame::update(cv::Mat faceImage, std::vector<cv::Point_<double> > faceUV, std::vector<cv::Point3_<double> > vertices) {
@@ -178,6 +177,15 @@ void Frame::update(cv::Mat faceImage, std::vector<cv::Point_<double> > faceUV, s
   cutLeftEyeRegion();
   cutRightEyeRegion();
   cutMouseRegion();
+  updateSave();
+}
+
+void Frame::startSave() {
+  imwrite("Pictures/model.jpg", modelImage);
+  saveUV("Data/model.uv", modelUV);
+}
+
+void Frame::updateSave() {
   imwrite("Pictures/face.jpg", faceImage);
   saveUV("Data/face.uv", faceUV);
   saveVertices("Data/face.ver", vertices);
@@ -187,4 +195,12 @@ void Frame::update(cv::Mat faceImage, std::vector<cv::Point_<double> > faceUV, s
   saveUV("Data/righteye.uv", rightEyeUV);
   imwrite("Pictures/mouse.jpg", mouseImage);
   saveUV("Data/mouse.uv", mouseUV);
+}
+
+void Frame::startSend() {
+  
+}
+
+void Frame::updateSend() {
+
 }

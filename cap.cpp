@@ -6,6 +6,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/opencv.hpp>
 #include <fstream>
+#include "client.h"
 
 using namespace FACETRACKER;
 using namespace AVATAR;
@@ -25,7 +26,18 @@ int runImageMode(const Configuration &cfg, const cv::Mat& image, Avatar* avatar)
 void displayData(const Configuration &cfg, const cv::Mat &image, const std::vector<cv::Point_<double> > &points, const Pose &pose);
 
 int main(int argc, char** argv) {
-  Configuration cfg;
+  Client client;
+  client.start();
+  int n = 4000;
+  char* data = new char[n];
+  data[1234] = 0;
+  while (true) {
+    data[1234]++;
+    client.sendByteArray(0, n, data);
+    std::cout << "sent" << std::endl;
+  }
+  delete[] data;
+  /*Configuration cfg;
   cfg.model_pathname = DefaultFaceTrackerModelPathname();
   cfg.params_pathname = DefaultFaceTrackerParamsPathname();
   cfg.tracking_threshold = 1;
@@ -63,7 +75,7 @@ int main(int argc, char** argv) {
     runImageMode(cfg, frame, avatar);
   }
 
-  return 0;
+  return 0;*/
 }
 
 int runImageMode(const Configuration &cfg, const cv::Mat& image, Avatar* avatar) {

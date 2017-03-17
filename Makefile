@@ -16,7 +16,7 @@ CC = g++
 
 OBJS = 
 
-all: face
+all: cap
 
 clean:
 	rm -f *.o *~
@@ -27,5 +27,5 @@ clean:
 face: face.o frame.o
 	$(CC) $(LIBDIRS) $(LIBS) -o $@ $+ $(OPT)
 
-cap: cap.o
+cap: cap.o client.o
 	$(CC) $(LIBDIRS) $(LIBS) -o $@ $+ $(OPT)

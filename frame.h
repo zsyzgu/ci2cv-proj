@@ -18,6 +18,7 @@ private:
   std::vector<cv::Point_<double> > rightEyeUV;
   std::vector<cv::Point_<double> > mouseUV;
   std::vector<cv::Point3_<double> > vertices;
+
   void cutImage(cv::Mat& input, cv::Mat& output, cv::Rect_<double> rect);
   void cutUV(std::vector<cv::Point_<double> >& input, std::vector<cv::Point_<double> >& output, cv::Rect_<double> rect);
   void readTris();
@@ -48,6 +49,10 @@ public:
   void cutMouseRegion();
   void start(cv::Mat modelImage, std::vector<cv::Point_<double> > modelUV, std::vector<int> tris);
   void update(cv::Mat faceImage, std::vector<cv::Point_<double> > faceUV, std::vector<cv::Point3_<double> > vertices);
+  void startSave();
+  void updateSave();
+  void startSend();
+  void updateSend();
 };
 
 #endif //FRAME_H

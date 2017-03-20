@@ -16,7 +16,7 @@ CC = g++
 
 OBJS = 
 
-all: cap
+all: main
 
 clean:
 	rm -f *.o *~
@@ -24,8 +24,5 @@ clean:
 %.o: %.cpp
 	$(CC) -c $(INCLUDES) $+ $(OPT)
 
-face: face.o frame.o
-	$(CC) $(LIBDIRS) $(LIBS) -o $@ $+ $(OPT)
-
-cap: cap.o client.o
+main: main.o client.o frame.o
 	$(CC) $(LIBDIRS) $(LIBS) -o $@ $+ $(OPT)

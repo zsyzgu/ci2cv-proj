@@ -6,7 +6,7 @@
 #include <string.h>
 
 Client::Client() {
-  port = 6789;
+  port = 5001;
   addr = "192.168.1.135";
 }
 

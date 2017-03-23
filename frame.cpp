@@ -106,8 +106,8 @@ void Frame::setRightEyeImage(const cv::Mat& rightEyeImage) {
   this->rightEyeImage = rightEyeImage;
 }
 
-void Frame::setMouseImage(const cv::Mat& mouseImage) {
-  this->mouseImage = mouseImage;
+void Frame::setMouthImage(const cv::Mat& mouthImage) {
+  this->mouthImage = mouthImage;
 }
 
 void Frame::setVertices(const std::vector<cv::Point3_<double> >& vertices) {
@@ -126,8 +126,8 @@ void Frame::setRightEyeUV(const std::vector<cv::Point_<double> >& rightEyeUV) {
   this->rightEyeUV = rightEyeUV;
 }
 
-void Frame::setMouseUV(const std::vector<cv::Point_<double> >& mouseUV) {
-  this->mouseUV = mouseUV;
+void Frame::setMouthUV(const std::vector<cv::Point_<double> >& mouthUV) {
+  this->mouthUV = mouthUV;
 }
 
 cv::Rect_<double> Frame::getLeftEyeRect() {
@@ -140,7 +140,7 @@ cv::Rect_<double> Frame::getRightEyeRect() {
   return getRegionRect(tris.size() / 3 - 10, 4);
 }
 
-cv::Rect_<double> Frame::getMouseRect() {
+cv::Rect_<double> Frame::getMouthRect() {
   assert(tris.size() / 3 >= 6);
   return getRegionRect(tris.size() / 3 - 6, 6);
 }
@@ -157,10 +157,10 @@ void Frame::cutRightEyeRegion() {
   cutUV(faceUV, rightEyeUV, rect);
 }
 
-void Frame::cutMouseRegion() {
-  cv::Rect_<double> rect = getMouseRect();
-  cutImage(faceImage, mouseImage, rect);
-  cutUV(faceUV, mouseUV, rect);
+void Frame::cutMouthRegion() {
+  cv::Rect_<double> rect = getMouthRect();
+  cutImage(faceImage, mouthImage, rect);
+  cutUV(faceUV, mouthUV, rect);
 }
 
 void Frame::start(cv::Mat modelImage, std::vector<cv::Point_<double> > modelUV, std::vector<cv::Point3_<double> > vertices, std::vector<int> tris) {
@@ -178,7 +178,7 @@ void Frame::update(cv::Mat faceImage, std::vector<cv::Point_<double> > faceUV, s
   setVertices(vertices);
   cutLeftEyeRegion();
   cutRightEyeRegion();
-  cutMouseRegion();
+  cutMouthRegion();
   updateSave();
   updateSend();
 }
@@ -196,8 +196,8 @@ void Frame::updateSave() {
   saveUV("Data/lefteye.uv", leftEyeUV);
   imwrite("Pictures/righteye.jpg", rightEyeImage);
   saveUV("Data/righteye.uv", rightEyeUV);
-  imwrite("Pictures/mouse.jpg", mouseImage);
-  saveUV("Data/mouse.uv", mouseUV);
+  imwrite("Pictures/mouth.jpg", mouthImage);
+  saveUV("Data/mouth.uv", mouthUV);
 }
 
 void Frame::startSend() {
@@ -213,6 +213,6 @@ void Frame::updateSend() {
   client.sendPointArray(5, leftEyeUV);
   client.sendImage(6, rightEyeImage);
   client.sendPointArray(7, rightEyeUV);
-  client.sendImage(8, mouseImage);
-  client.sendPointArray(9, mouseUV);
+  client.sendImage(8, mouthImage);
+  client.sendPointArray(9, mouthUV);
 }

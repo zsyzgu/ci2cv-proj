@@ -64,7 +64,6 @@ void initialize() {
     return;
   }
 
-  char ch;
   cv::Mat image;
   std::vector<cv::Point_<double> > uv;
   std::vector<cv::Point3_<double> > vertices;
@@ -76,7 +75,7 @@ void initialize() {
     cv::Mat displayImage = displayFeatures(image, uv);
     cv::imshow("init", displayImage);
     std::cout << "result = " << result << ". Is it ok? [y/n]" << std::endl;
-    int ch = cv::waitKey(0);
+    char ch = cv::waitKey(0);
     if (ch == 'y') {
       break;
     }
@@ -92,6 +91,7 @@ void initialize() {
   }
 
   std::cout << "initialize done. enter any key to connect." << std::endl;
+  char ch;
   std::cin >> ch;
   frame = new Frame();
   frame->start(image, uv, vertices, tris);

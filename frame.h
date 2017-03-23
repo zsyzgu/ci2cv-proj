@@ -48,7 +48,7 @@ public:
   void cutLeftEyeRegion();
   void cutRightEyeRegion();
   void cutMouseRegion();
-  void start(cv::Mat modelImage, std::vector<cv::Point_<double> > modelUV, std::vector<int> tris);
+  void start(cv::Mat modelImage, std::vector<cv::Point_<double> > modelUV, std::vector<cv::Point3_<double> > vertices, std::vector<int> tris);
   void update(cv::Mat faceImage, std::vector<cv::Point_<double> > faceUV, std::vector<cv::Point3_<double> > vertices);
   void startSave();
   void updateSave();

@@ -163,9 +163,10 @@ void Frame::cutMouseRegion() {
   cutUV(faceUV, mouseUV, rect);
 }
 
-void Frame::start(cv::Mat modelImage, std::vector<cv::Point_<double> > modelUV, std::vector<int> tris) {
+void Frame::start(cv::Mat modelImage, std::vector<cv::Point_<double> > modelUV, std::vector<cv::Point3_<double> > vertices, std::vector<int> tris) {
   setModelImage(modelImage);
   setModelUV(modelUV);
+  setVertices(vertices);
   setTris(tris);
   startSave();
   startSend();
@@ -202,7 +203,7 @@ void Frame::updateSave() {
 void Frame::startSend() {
   client.sendImage(0, modelImage);
   client.sendPointArray(1, modelUV);
-  //client.sendPoint3Array(2, vertices);
+  client.sendPoint3Array(2, vertices);
   client.sendIntArray(3, tris);
 }
 

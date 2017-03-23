@@ -33,7 +33,6 @@ bool Client::start() {
 
 void Client::sendByteArray(char id, int len, char* data) {
   char confirm;
-  while (recv(server_socket, &confirm, 1, 0) != 1);
   char* info = new char[5];
   info[0] = id;
   memcpy(info + 1, &len, sizeof(len));

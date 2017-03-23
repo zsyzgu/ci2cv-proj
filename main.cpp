@@ -11,18 +11,6 @@
 using namespace FACETRACKER;
 using namespace AVATAR;
 
-struct Configuration {
-  std::string modelPathname;
-  std::string paramsPathname;
-  int trackingThreshold;
-  double faceBoxSize;
-  std::string window_title;
-  int circle_radius;
-  int circle_thickness;
-  int circle_linetype;
-  int circle_shift;
-};
-
 Frame* frame = NULL;
 
 void printUsage();
@@ -30,16 +18,15 @@ void initialize();
 void capture();
 
 void produceModel(std::string modelPathName, cv::Mat& image, std::vector<cv::Point_<double> >& uv);
-cv::Mat computePoseImage(const Pose &pose, int height, int width);
-cv::Mat displayFeatures(const Configuration &cfg, const cv::Mat &image, const std::vector<cv::Point_<double> > &uv, const Pose &pose);
-int calnFeatures(cv::Mat& image, cv::Mat& displayImage, std::vector<cv::Point_<double> >& uv, std::vector<cv::Point3_<double> >& vertices);
+cv::Mat displayFeatures(const cv::Mat &image, const std::vector<cv::Point_<double> > &uv);
+int calnFeatures(cv::Mat& image, std::vector<cv::Point_<double> >& uv, std::vector<cv::Point3_<double> >& vertices);
 
 int main() {
   printUsage();
 
   while (true) {
     char ch;
-    std::cin >> ch;
+    ch = getchar();
     if (ch == 'h') {
       printUsage();
     }
@@ -84,12 +71,12 @@ void initialize() {
 
   while (true) {
     capture >> image;
-    cv::Mat displayImage;
-    int result = calnFeatures(image, displayImage, uv, vertices);
-    //cv::imshow("capturing", displayImage);
-    //cv::waitKey(1);
+    int result = calnFeatures(image, uv, vertices);
+
+    cv::Mat displayImage = displayFeatures(image, uv);
+    cv::imshow("init", displayImage);
     std::cout << "result = " << result << ". Is it ok? [y/n]" << std::endl;
-    std::cin >> ch;
+    int ch = cv::waitKey(0);
     if (ch == 'y') {
       break;
     }
@@ -107,7 +94,7 @@ void initialize() {
   std::cout << "initialize done. enter any key to connect." << std::endl;
   std::cin >> ch;
   frame = new Frame();
-  frame->start(image, uv, tris);
+  frame->start(image, uv, vertices, tris);
   std::cout << "connect done" << std::endl;
   printUsage();
 }
@@ -144,14 +131,10 @@ void capture() {
 
   while (true) {
     capture >> image;
-    cv::Mat displayImage;
-    int result = calnFeatures(image, displayImage, uv, vertices);
-    //cv::imshow("capturing", displayImage);
-    //cv::waitKey(1);
+    int result = calnFeatures(image, uv, vertices);
     if (result > 0) {
       frame->update(image, uv, vertices);
     }
-    std::cout << "Hello" << std::endl;
   }
 }
 
@@ -180,25 +163,12 @@ void produceModel(std::string modelPathName, cv::Mat& image, std::vector<cv::Poi
   delete model;
 }
 
-cv::Mat computePoseImage(const Pose &pose, int height, int width) {
-  cv::Mat_<cv::Vec<uint8_t,3> > rv = cv::Mat_<cv::Vec<uint8_t,3> >::zeros(height,width);
-  cv::Mat_<double> axes = pose_axes(pose);
-  cv::Mat_<double> scaling = cv::Mat_<double>::eye(3,3);
+cv::Mat displayFeatures(const cv::Mat &image, const std::vector<cv::Point_<double> > &uv) {
+  int circle_radius = 2;
+  int circle_thickness = 2;
+  int circle_linetype = 8;
+  int circle_shift = 0;
 
-  for (int i = 0; i < axes.cols; i++) {
-    axes(0,i) = -0.5*double(width)*(axes(0,i) - 1);
-    axes(1,i) = -0.5*double(height)*(axes(1,i) - 1);
-  }
-  
-  cv::Point centre(width/2, height/2);
-  cv::line(rv, centre, cv::Point(axes(0,0), axes(1,0)), cv::Scalar(255,0,0));
-  cv::line(rv, centre, cv::Point(axes(0,1), axes(1,1)), cv::Scalar(0,255,0));
-  cv::line(rv, centre, cv::Point(axes(0,2), axes(1,2)), cv::Scalar(0,0,255));
-
-  return rv;
-}
-
-cv::Mat displayFeatures(const Configuration &cfg, const cv::Mat &image, const std::vector<cv::Point_<double> > &uv, const Pose &pose) {
   cv::Scalar colour;
   if (image.type() == cv::DataType<uint8_t>::type)
     colour = cv::Scalar(255);
@@ -216,46 +186,26 @@ cv::Mat displayFeatures(const Configuration &cfg, const cv::Mat &image, const st
     throw make_runtime_error("Unsupported camera image type for displayData function.");
 
   for (size_t i = 0; i < uv.size(); i++) {
-    cv::circle(displayed_image, uv[i], cfg.circle_radius, colour, cfg.circle_thickness, cfg.circle_linetype, cfg.circle_shift);
-  }
-
-  int pose_image_height = 100;
-  int pose_image_width = 100;
-  cv::Mat pose_image = computePoseImage(pose, pose_image_height, pose_image_width);
-  for (int i = 0; i < pose_image_height; i++) {
-    for (int j = 0; j < pose_image_width; j++) {
-      displayed_image.at<cv::Vec<uint8_t,3> >(displayed_image.rows - pose_image_height + i,
-            displayed_image.cols - pose_image_width + j)
-       
-         = pose_image.at<cv::Vec<uint8_t,3> >(i,j);
-    }
+    cv::Point_<double> point = uv[i];
+    point.x = displayed_image.cols * point.x;
+    point.y = displayed_image.rows * (1 - point.y);
+    cv::circle(displayed_image, point, circle_radius, colour, circle_thickness, circle_linetype, circle_shift);
   }
 
   return displayed_image;
 }
 
-int calnFeatures(cv::Mat& image, cv::Mat& displayImage, std::vector<cv::Point_<double> >& uv, std::vector<cv::Point3_<double> >& vertices) {
-  Configuration cfg;
-  cfg.modelPathname = DefaultFaceTrackerModelPathname();
-  cfg.paramsPathname = DefaultFaceTrackerParamsPathname();
-  cfg.trackingThreshold = 1;
-  cfg.faceBoxSize = 40;
-  cfg.window_title = "UV image";
-  cfg.circle_radius = 2;
-  cfg.circle_thickness = 2;
-  cfg.circle_linetype = 8;
-  cfg.circle_shift = 0;
+int calnFeatures(cv::Mat& image, std::vector<cv::Point_<double> >& uv, std::vector<cv::Point3_<double> >& vertices) {
+  double faceBoxSize = 40;
 
-  FaceTracker* tracker = LoadFaceTracker(cfg.modelPathname.c_str());
-  FaceTrackerParams* trackerParams = LoadFaceTrackerParams(cfg.paramsPathname.c_str());
+  FaceTracker* tracker = LoadFaceTracker(DefaultFaceTrackerModelPathname().c_str());
+  FaceTrackerParams* trackerParams = LoadFaceTrackerParams(DefaultFaceTrackerParamsPathname().c_str());
 
   cv::Mat grayImage;
   cv::cvtColor(image, grayImage, CV_RGB2GRAY);
   int result = tracker->NewFrame(grayImage, trackerParams);
 
   uv = tracker->getShape();
-  Pose pose = tracker->getPose();
-  //displayImage = displayFeatures(cfg, image, uv, pose);
 
   for (int i = 0; i < uv.size(); i++) {
     uv[i].x = uv[i].x / image.cols;
@@ -264,9 +214,9 @@ int calnFeatures(cv::Mat& image, cv::Mat& displayImage, std::vector<cv::Point_<d
 
   vertices = tracker->get3DShape();
   for (int i = 0; i < vertices.size(); i++) {
-    vertices[i].x = vertices[i].x / cfg.faceBoxSize;
-    vertices[i].y = vertices[i].y / cfg.faceBoxSize;
-    vertices[i].z = vertices[i].z / cfg.faceBoxSize;
+    vertices[i].x = vertices[i].x / faceBoxSize;
+    vertices[i].y = vertices[i].y / faceBoxSize;
+    vertices[i].z = vertices[i].z / faceBoxSize;
   }
 
   delete tracker;

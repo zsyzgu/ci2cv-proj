@@ -14,8 +14,9 @@ using namespace AVATAR;
 Frame* frame = NULL;
 
 void printUsage();
-void initialize();
+void initialize(cv::Mat& image);
 void capture();
+cv::Mat chooseImage();
 
 void produceModel(std::string modelPathName, cv::Mat& image, std::vector<cv::Point_<double> >& uv);
 cv::Mat displayFeatures(const cv::Mat &image, const std::vector<cv::Point_<double> > &uv);
@@ -31,7 +32,8 @@ int main() {
       printUsage();
     }
     if (ch == 'i') {
-      initialize();
+      cv::Mat image = chooseImage();
+      initialize(image);
     }
     if (ch == 'c') {
       capture();
@@ -57,29 +59,10 @@ void printUsage() {
   std::cout << usage << std::endl;
 }
 
-void initialize() {
-  cv::VideoCapture capture;
-  if (!capture.open(0)) {
-    perror("Can not open web camera");
-    return;
-  }
-
-  cv::Mat image;
+void initialize(cv::Mat& image) {
   std::vector<cv::Point_<double> > uv;
   std::vector<cv::Point3_<double> > vertices;
-
-  while (true) {
-    capture >> image;
-    int result = calnFeatures(image, uv, vertices);
-
-    cv::Mat displayImage = displayFeatures(image, uv);
-    cv::imshow("init", displayImage);
-    std::cout << "result = " << result << ". Is it ok? [y/n]" << std::endl;
-    char ch = cv::waitKey(0);
-    if (ch == 'y') {
-      break;
-    }
-  }
+  calnFeatures(image, uv, vertices);
 
   produceModel("Data/model", image, uv);
 
@@ -90,9 +73,7 @@ void initialize() {
     tris.push_back(x);
   }
 
-  std::cout << "initialize done. enter any key to connect." << std::endl;
-  char ch;
-  std::cin >> ch;
+  std::cout << "initialize done." << std::endl;
   frame = new Frame();
   frame->start(image, uv, vertices, tris);
   std::cout << "connect done" << std::endl;
@@ -101,8 +82,9 @@ void initialize() {
 
 void capture() {
   if (frame == NULL) {
-    std::cout << "please first initialize." << std::endl;
-    return;
+    std::cout << "use old initialized image" << std::endl;
+    cv::Mat image = cv::imread("Pictures/model.jpg");
+    initialize(image);
   }
 
   Avatar* avatar = LoadAvatar("Data/model");
@@ -110,7 +92,7 @@ void capture() {
     throw make_runtime_error("Failed to load avatar.");
   }
   avatar->setAvatar(0);
-  cv::Mat_<cv::Vec<uint8_t,3> > calibration_image = cv::imread("Pictures/model.jpg");
+  cv::Mat_<cv::Vec<uint8_t,3> > calibration_image = cv::imread("Pictures/model.jpg"); //Try to delete these calibration
   std::vector<cv::Point_<double> > calibration_points;
   std::ifstream uvFile("Data/model.uv");
   double u, v;
@@ -136,6 +118,33 @@ void capture() {
       frame->update(image, uv, vertices);
     }
   }
+}
+
+cv::Mat chooseImage() {
+  cv::VideoCapture capture;
+  if (!capture.open(0)) {
+    perror("Can not open web camera");
+  }
+
+  cv::Mat image;
+  std::vector<cv::Point_<double> > uv;
+  std::vector<cv::Point3_<double> > vertices;
+
+  while (true) {
+    capture >> image;
+    int result = calnFeatures(image, uv, vertices);
+
+    cv::Mat displayImage = displayFeatures(image, uv);
+    cv::imshow("init", displayImage);
+    std::cout << "result = " << result << ". Is it ok? [y/n]" << std::endl;
+    char ch = cv::waitKey(0);
+    if (ch == 'y') {
+      break;
+    }
+  }
+
+  cv::imwrite("Pictures/model.jpg", image);
+  return image;
 }
 
 void produceModel(std::string modelPathName, cv::Mat& image, std::vector<cv::Point_<double> >& uv) {

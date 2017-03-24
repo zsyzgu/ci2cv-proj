@@ -201,9 +201,9 @@ void Frame::updateSave() {
 }
 
 void Frame::startSend() {
+  client.sendPoint3Array(2, vertices);
   client.sendImage(0, modelImage);
   client.sendPointArray(1, modelUV);
-  client.sendPoint3Array(2, vertices);
   client.sendIntArray(3, tris);
 }
 

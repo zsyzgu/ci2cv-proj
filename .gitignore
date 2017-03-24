@@ -3,8 +3,7 @@
 *.ver
 *.uv
 *.model
-face
-cap
+main
 /resource
 /Data
 /Pictures

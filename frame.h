@@ -8,8 +8,6 @@
 class Frame {
 private:
   Client client;
-  cv::Mat modelImage;
-  std::vector<cv::Point_<double> > modelUV;
   std::vector<int> tris;
   cv::Mat faceImage;
   cv::Mat leftEyeImage;
@@ -30,8 +28,6 @@ private:
 public:
   Frame();
   ~Frame();
-  void setModelImage(const cv::Mat& modelImage);
-  void setModelUV(const std::vector<cv::Point_<double> >& modelUV);
   void setTris(const std::vector<int>& tris);
   void setFaceImage(const cv::Mat& faceImage);
   void setLeftEyeImage(const cv::Mat& leftEyeImage);
@@ -48,7 +44,7 @@ public:
   void cutLeftEyeRegion();
   void cutRightEyeRegion();
   void cutMouthRegion();
-  void start(cv::Mat modelImage, std::vector<cv::Point_<double> > modelUV, std::vector<cv::Point3_<double> > vertices, std::vector<int> tris);
+  void start(std::vector<int> tris);
   void update(cv::Mat faceImage, std::vector<cv::Point_<double> > faceUV, std::vector<cv::Point3_<double> > vertices);
   void startSave();
   void updateSave();

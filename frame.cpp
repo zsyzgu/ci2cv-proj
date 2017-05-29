@@ -82,13 +82,13 @@ Frame::~Frame() {
   client.end();
 }
 
-void Frame::setModelImage(const cv::Mat& modelImage) {
+/*void Frame::setModelImage(const cv::Mat& modelImage) {
   this->modelImage = modelImage;
 }
 
 void Frame::setModelUV(const std::vector<cv::Point_<double> >& modelUV) {
   this->modelUV = modelUV;
-}
+}*/
 
 void Frame::setTris(const std::vector<int>& tris) {
   this->tris = tris;
@@ -163,13 +163,14 @@ void Frame::cutMouthRegion() {
   cutUV(faceUV, mouthUV, rect);
 }
 
-void Frame::start(cv::Mat modelImage, std::vector<cv::Point_<double> > modelUV, std::vector<cv::Point3_<double> > vertices, std::vector<int> tris) {
-  setModelImage(modelImage);
+void Frame::start(std::vector<int> tris) {
+  /*setModelImage(modelImage);
   setModelUV(modelUV);
-  setVertices(vertices);
+  setVertices(vertices);*/
   setTris(tris);
-  startSave();
-  startSend();
+  client.sendIntArray(3, tris);
+  /*startSave();
+  startSend();*/
 }
 
 void Frame::update(cv::Mat faceImage, std::vector<cv::Point_<double> > faceUV, std::vector<cv::Point3_<double> > vertices) {
@@ -183,12 +184,14 @@ void Frame::update(cv::Mat faceImage, std::vector<cv::Point_<double> > faceUV, s
   updateSend();
 }
 
-void Frame::startSave() {
+/*void Frame::startSave() {
   imwrite("Pictures/model.jpg", modelImage);
   saveUV("Data/model.uv", modelUV);
-}
+}*/
 
 void Frame::updateSave() {
+  imwrite("Pictures/model.jpg", faceImage);
+  saveUV("Data/model.uv", faceUV);
   imwrite("Pictures/face.jpg", faceImage);
   saveUV("Data/face.uv", faceUV);
   saveVertices("Data/face.ver", vertices);
@@ -200,14 +203,16 @@ void Frame::updateSave() {
   saveUV("Data/mouth.uv", mouthUV);
 }
 
-void Frame::startSend() {
+/*void Frame::startSend() {
   client.sendPoint3Array(2, vertices);
   client.sendImage(0, modelImage);
   client.sendPointArray(1, modelUV);
   client.sendIntArray(3, tris);
-}
+}*/
 
 void Frame::updateSend() {
+  client.sendImage(0, faceImage);
+  client.sendPointArray(1, faceUV);
   client.sendPoint3Array(2, vertices);
   client.sendImage(4, leftEyeImage);
   client.sendPointArray(5, leftEyeUV);

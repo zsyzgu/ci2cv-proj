@@ -75,8 +75,9 @@ void initialize(cv::Mat& image) {
   }
 
   std::cout << "initialize done." << std::endl;
-  //frame = new Frame();
-  //frame->start(image, uv, vertices, tris);
+  frame = new Frame();
+  frame->start(tris);
+  frame->update(image, uv, vertices);
   std::cout << "connect done" << std::endl;
   printUsage();
 }
@@ -117,7 +118,7 @@ void capture() {
     pyrDown(image, image, cv::Size(image.cols / 2, image.rows / 2));
     int result = calnFeatures(image, uv, vertices);
     if (result > 0) {
-      //frame->update(image, uv, vertices);
+      frame->update(image, uv, vertices);
     }
     cv::Mat displayImage = displayFeatures(image, uv);
     cv::imshow("window", displayImage);

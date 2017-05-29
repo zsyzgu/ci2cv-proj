@@ -82,13 +82,11 @@ Frame::~Frame() {
   client.end();
 }
 
-/*void Frame::setModelImage(const cv::Mat& modelImage) {
-  this->modelImage = modelImage;
+void Frame::setStrategy(int strategy) {
+  std::cout << "strategy = " << strategy << std::endl;
+  this->strategy = strategy;
+  strategyChanged = true;
 }
-
-void Frame::setModelUV(const std::vector<cv::Point_<double> >& modelUV) {
-  this->modelUV = modelUV;
-}*/
 
 void Frame::setTris(const std::vector<int>& tris) {
   this->tris = tris;
@@ -163,35 +161,60 @@ void Frame::cutMouthRegion() {
   cutUV(faceUV, mouthUV, rect);
 }
 
-void Frame::start(std::vector<int> tris) {
-  /*setModelImage(modelImage);
-  setModelUV(modelUV);
-  setVertices(vertices);*/
+void Frame::start(cv::Mat modelImage, std::vector<cv::Point_<double> > modelUV, std::vector<int> tris) {
+  this->modelImage = modelImage;
+  this->modelUV = modelUV;
+  imwrite("Pictures/model.jpg", modelImage);
+  saveUV("Data/model.uv", modelUV);
   setTris(tris);
   client.sendIntArray(3, tris);
-  /*startSave();
-  startSend();*/
 }
 
 void Frame::update(cv::Mat faceImage, std::vector<cv::Point_<double> > faceUV, std::vector<cv::Point3_<double> > vertices) {
-  setFaceImage(faceImage);
-  setFaceUV(faceUV);
+  if (strategyChanged) {
+    if (strategy == 1 || strategy == 2) {
+      client.sendImage(0, modelImage);
+      client.sendPointArray(1, modelUV);
+    }
+    if (strategy == 2) {
+      setFaceImage(modelImage);
+      setFaceUV(modelUV);
+      cutLeftEyeRegion();
+      cutRightEyeRegion();
+      cutMouthRegion();
+      client.sendImage(4, leftEyeImage);
+      client.sendPointArray(5, leftEyeUV);
+      client.sendImage(6, rightEyeImage);
+      client.sendPointArray(7, rightEyeUV);
+      client.sendImage(8, mouthImage);
+      client.sendPointArray(9, mouthUV);
+    }
+    strategyChanged = false;
+  }
+
   setVertices(vertices);
-  cutLeftEyeRegion();
-  cutRightEyeRegion();
-  cutMouthRegion();
-  updateSave();
-  updateSend();
+  client.sendPoint3Array(2, vertices);
+  if (strategy == 0 || strategy == 1) {
+    setFaceImage(faceImage);
+    setFaceUV(faceUV);
+    cutLeftEyeRegion();
+    cutRightEyeRegion();
+    cutMouthRegion();
+
+    if (strategy == 0) {
+      client.sendImage(0, faceImage);
+      client.sendPointArray(1, faceUV);
+    }
+    client.sendImage(4, leftEyeImage);
+    client.sendPointArray(5, leftEyeUV);
+    client.sendImage(6, rightEyeImage);
+    client.sendPointArray(7, rightEyeUV);
+    client.sendImage(8, mouthImage);
+    client.sendPointArray(9, mouthUV);
+  }
 }
 
-/*void Frame::startSave() {
-  imwrite("Pictures/model.jpg", modelImage);
-  saveUV("Data/model.uv", modelUV);
-}*/
-
-void Frame::updateSave() {
-  imwrite("Pictures/model.jpg", faceImage);
-  saveUV("Data/model.uv", faceUV);
+/*void Frame::updateSave() {
   imwrite("Pictures/face.jpg", faceImage);
   saveUV("Data/face.uv", faceUV);
   saveVertices("Data/face.ver", vertices);
@@ -201,23 +224,4 @@ void Frame::updateSave() {
   saveUV("Data/righteye.uv", rightEyeUV);
   imwrite("Pictures/mouth.jpg", mouthImage);
   saveUV("Data/mouth.uv", mouthUV);
-}
-
-/*void Frame::startSend() {
-  client.sendPoint3Array(2, vertices);
-  client.sendImage(0, modelImage);
-  client.sendPointArray(1, modelUV);
-  client.sendIntArray(3, tris);
 }*/
-
-void Frame::updateSend() {
-  client.sendImage(0, faceImage);
-  client.sendPointArray(1, faceUV);
-  client.sendPoint3Array(2, vertices);
-  client.sendImage(4, leftEyeImage);
-  client.sendPointArray(5, leftEyeUV);
-  client.sendImage(6, rightEyeImage);
-  client.sendPointArray(7, rightEyeUV);
-  client.sendImage(8, mouthImage);
-  client.sendPointArray(9, mouthUV);
-}

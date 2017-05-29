@@ -76,7 +76,8 @@ void initialize(cv::Mat& image) {
 
   std::cout << "initialize done." << std::endl;
   frame = new Frame();
-  frame->start(tris);
+  frame->setStrategy(0);
+  frame->start(image, uv, tris);
   frame->update(image, uv, vertices);
   std::cout << "connect done" << std::endl;
   printUsage();
@@ -122,7 +123,14 @@ void capture() {
     }
     cv::Mat displayImage = displayFeatures(image, uv);
     cv::imshow("window", displayImage);
-    cv::waitKey(1);
+    char cmd = cv::waitKey(1);
+    if (cmd == '0') {
+      frame->setStrategy(0);
+    } else if (cmd == '1') {
+      frame->setStrategy(1);
+    } else if (cmd == '2') {
+      frame->setStrategy(2);
+    }
   }
 }
 

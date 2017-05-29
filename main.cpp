@@ -8,6 +8,7 @@
 #include <fstream>
 #include "frame.h"
 
+using namespace std;
 using namespace FACETRACKER;
 using namespace AVATAR;
 
@@ -74,8 +75,8 @@ void initialize(cv::Mat& image) {
   }
 
   std::cout << "initialize done." << std::endl;
-  frame = new Frame();
-  frame->start(image, uv, vertices, tris);
+  //frame = new Frame();
+  //frame->start(image, uv, vertices, tris);
   std::cout << "connect done" << std::endl;
   printUsage();
 }
@@ -92,7 +93,7 @@ void capture() {
     throw make_runtime_error("Failed to load avatar.");
   }
   avatar->setAvatar(0);
-  cv::Mat_<cv::Vec<uint8_t,3> > calibration_image = cv::imread("Pictures/model.jpg"); //Try to delete these calibration
+  cv::Mat_<cv::Vec<uint8_t,3> > calibration_image = cv::imread("Pictures/model.jpg");
   std::vector<cv::Point_<double> > calibration_points;
   std::ifstream uvFile("Data/model.uv");
   double u, v;
@@ -113,10 +114,14 @@ void capture() {
 
   while (true) {
     capture >> image;
+    pyrDown(image, image, cv::Size(image.cols / 2, image.rows / 2));
     int result = calnFeatures(image, uv, vertices);
     if (result > 0) {
-      frame->update(image, uv, vertices);
+      //frame->update(image, uv, vertices);
     }
+    cv::Mat displayImage = displayFeatures(image, uv);
+    cv::imshow("window", displayImage);
+    cv::waitKey(1);
   }
 }
 
@@ -132,10 +137,11 @@ cv::Mat chooseImage() {
 
   while (true) {
     capture >> image;
+    pyrDown(image, image, cv::Size(image.cols / 2, image.rows / 2));
     int result = calnFeatures(image, uv, vertices);
 
     cv::Mat displayImage = displayFeatures(image, uv);
-    cv::imshow("init", displayImage);
+    cv::imshow("window", displayImage);
     std::cout << "result = " << result << ". Is it ok? [y/n]" << std::endl;
     char ch = cv::waitKey(0);
     if (ch == 'y') {
@@ -173,7 +179,7 @@ void produceModel(std::string modelPathName, cv::Mat& image, std::vector<cv::Poi
 }
 
 cv::Mat displayFeatures(const cv::Mat &image, const std::vector<cv::Point_<double> > &uv) {
-  int circle_radius = 2;
+  int circle_radius = 1;
   int circle_thickness = 2;
   int circle_linetype = 8;
   int circle_shift = 0;
@@ -205,7 +211,7 @@ cv::Mat displayFeatures(const cv::Mat &image, const std::vector<cv::Point_<doubl
 }
 
 int calnFeatures(cv::Mat& image, std::vector<cv::Point_<double> >& uv, std::vector<cv::Point3_<double> >& vertices) {
-  double faceBoxSize = 40;
+  double mToCM = 100;
 
   FaceTracker* tracker = LoadFaceTracker(DefaultFaceTrackerModelPathname().c_str());
   FaceTrackerParams* trackerParams = LoadFaceTrackerParams(DefaultFaceTrackerParamsPathname().c_str());
@@ -223,9 +229,9 @@ int calnFeatures(cv::Mat& image, std::vector<cv::Point_<double> >& uv, std::vect
 
   vertices = tracker->get3DShape();
   for (int i = 0; i < vertices.size(); i++) {
-    vertices[i].x = vertices[i].x / faceBoxSize;
-    vertices[i].y = vertices[i].y / faceBoxSize;
-    vertices[i].z = vertices[i].z / faceBoxSize;
+    vertices[i].x = vertices[i].x / mToCM;
+    vertices[i].y = vertices[i].y / mToCM;
+    vertices[i].z = vertices[i].z / mToCM;
   }
 
   delete tracker;

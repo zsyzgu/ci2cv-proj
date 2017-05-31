@@ -61,7 +61,6 @@ Frame::~Frame() {
 void Frame::setStrategy(int strategy) {
   std::cout << "strategy = " << strategy << std::endl;
   this->strategy = strategy;
-  strategyChanged = true;
 }
 
 cv::Rect_<double> Frame::getLeftEyeRect() {
@@ -101,50 +100,58 @@ void Frame::start(cv::Mat modelImage, std::vector<cv::Point_<double> > modelUV, 
   this->modelImage = modelImage;
   this->modelUV = modelUV;
   this->tris = tris;
+  client.sendImage(0, modelImage);
+  client.sendPointArray(1, modelUV);
   client.sendIntArray(3, tris);
+  this->faceImage = modelImage;
+  this->faceUV = modelUV;
+  cutLeftEyeRegion();
+  cutRightEyeRegion();
+  cutMouthRegion();
+  client.sendImage(4, leftEyeImage);
+  client.sendPointArray(5, leftEyeUV);
+  client.sendImage(6, rightEyeImage);
+  client.sendPointArray(7, rightEyeUV);
+  client.sendImage(8, mouthImage);
+  client.sendPointArray(9, mouthUV);
 }
 
 void Frame::update(cv::Mat faceImage, std::vector<cv::Point_<double> > faceUV, std::vector<cv::Point3_<double> > vertices) {
-  if (strategyChanged) {
-    if (strategy == 1 || strategy == 2) {
-      client.sendImage(0, modelImage);
-      client.sendPointArray(1, modelUV);
-    }
-    if (strategy == 2) {
-      this->faceImage = modelImage;
-      this->faceUV = modelUV;
-      cutLeftEyeRegion();
-      cutRightEyeRegion();
-      cutMouthRegion();
-      client.sendImage(4, leftEyeImage);
-      client.sendPointArray(5, leftEyeUV);
-      client.sendImage(6, rightEyeImage);
-      client.sendPointArray(7, rightEyeUV);
-      client.sendImage(8, mouthImage);
-      client.sendPointArray(9, mouthUV);
-    }
-    strategyChanged = false;
-  }
-
-  this->vertices = vertices;
-  client.sendPoint3Array(2, vertices);
-  if (strategy == 0 || strategy == 1) {
+  if (strategy == 0) {
     this->faceImage = faceImage;
     this->faceUV = faceUV;
+    this->vertices = vertices;
     cutLeftEyeRegion();
     cutRightEyeRegion();
     cutMouthRegion();
-
-    if (strategy == 0) {
-      client.sendImage(0, faceImage);
-      client.sendPointArray(1, faceUV);
-    }
+    client.sendImage(0, faceImage);
+    client.sendPointArray(1, faceUV);
+    client.sendPoint3Array(2, vertices);
     client.sendImage(4, leftEyeImage);
     client.sendPointArray(5, leftEyeUV);
     client.sendImage(6, rightEyeImage);
     client.sendPointArray(7, rightEyeUV);
     client.sendImage(8, mouthImage);
     client.sendPointArray(9, mouthUV);
+  }
+  if (strategy == 1) {
+    this->faceImage = faceImage;
+    this->faceUV = faceUV;
+    this->vertices = vertices;
+    cutLeftEyeRegion();
+    cutRightEyeRegion();
+    cutMouthRegion();
+    client.sendPoint3Array(2, vertices);
+    client.sendImage(4, leftEyeImage);
+    client.sendPointArray(5, leftEyeUV);
+    client.sendImage(6, rightEyeImage);
+    client.sendPointArray(7, rightEyeUV);
+    client.sendImage(8, mouthImage);
+    client.sendPointArray(9, mouthUV);
+  }
+  if (strategy == 2) {
+    this->vertices = vertices;
+    client.sendPoint3Array(2, vertices);
   }
 }
 

@@ -16,30 +16,29 @@ Frame* frame = NULL;
 
 void printUsage();
 void initialize();
-void capture();
+void update(int);
 
 void produceModel(std::string modelPathName, cv::Mat& image, std::vector<cv::Point_<double> >& uv);
 cv::Mat displayFeatures(const cv::Mat &image, const std::vector<cv::Point_<double> > &uv);
 int calnFeatures(cv::Mat& image, std::vector<cv::Point_<double> >& uv, std::vector<cv::Point3_<double> >& vertices);
 
-int main() {
-  printUsage();
-
-  while (true) {
-    char ch;
-    ch = getchar();
-    if (ch == 'h') {
-      printUsage();
-    }
+int main(int argc, char** argv) {
+  if (argc == 2 && strlen(argv[1]) == 1) {
+    char ch = argv[1][0];
     if (ch == 'i') {
       initialize();
     }
-    if (ch == 'c') {
-      capture();
+    if (ch == '0') {
+      update(0);
     }
-    if (ch == 'e') {
-      break;
+    if (ch == '1') {
+      update(1);
     }
+    if (ch == '2') {
+      update(2);
+    }
+  } else {
+    printUsage();
   }
 
   if (frame != NULL) {
@@ -50,23 +49,43 @@ int main() {
 
 void printUsage() {
   std::string usage = 
-    "h -- help\n"
     "i -- initialize\n"
-    "c -- capture\n"
-    "e -- exit";
+    "0 -- high\n"
+    "1 -- middle\n"
+    "2 -- low";
 
   std::cout << usage << std::endl;
 }
 
-void onMouseCalibrate(int event, int x, int y, int flags, void*) {
+std::vector<cv::Point_<double> > initUV;
+cv::Mat initImage;
+
+void onMouseCalibrate(int event, int intX, int intY, int flags, void*) {
+  int imageX = 640;
+  int imageY = 360;
   if (event == 1) {
-    cout << x << " " << y << endl;
+    double x = (double)intX / imageX;
+    double y = 1 - (double)intY / imageY;
+    int id = -1;
+    double minDist2 = 1e9;
+    for (int i = 0; i < initUV.size(); i++) {
+      double dist2 = (x - initUV[i].x) * (x - initUV[i].x) + (y - initUV[i].y) * (y - initUV[i].y);
+      if (dist2 < minDist2) {
+        id = i;
+        minDist2 = dist2;
+      }
+    }
+    if (id != -1) {
+      initUV[id].x = x;
+      initUV[id].y = y;
+    }
+    cv::Mat displayImage = displayFeatures(initImage, initUV);
+    cv::imshow("calibrate", displayImage);
   }
 }
 
 void initialize() {
   cv::Mat image;
-  std::vector<cv::Point_<double> > uv;
   std::vector<cv::Point3_<double> > vertices;
 
   cv::VideoCapture capture;
@@ -80,9 +99,10 @@ void initialize() {
   while (true) {
     capture >> image;
     pyrDown(image, image, cv::Size(image.cols / 2, image.rows / 2));
-    int result = calnFeatures(image, uv, vertices);
+    initImage = image;
+    int result = calnFeatures(image, initUV, vertices);
 
-    cv::Mat displayImage = displayFeatures(image, uv);
+    cv::Mat displayImage = displayFeatures(image, initUV);
     cv::imshow("calibrate", displayImage);
     std::cout << "result = " << result << ". Is it ok? [y/n]" << std::endl;
     char ch = cv::waitKey(0);
@@ -90,6 +110,8 @@ void initialize() {
       break;
     }
   }
+
+  std::vector<cv::Point_<double> > uv = initUV;
 
   cv::destroyWindow("calibrate");
   cv::waitKey(1);
@@ -108,7 +130,7 @@ void initialize() {
   printUsage();
 }
 
-void capture() {
+void update(int strategy) {
   cv::Mat image;
   std::vector<cv::Point3_<double> > vertices;
   std::vector<cv::Point_<double> > uv;
@@ -117,6 +139,13 @@ void capture() {
   image = cv::imread("Data/model.jpg");
 
   std::ifstream fin;
+  fin.open("Data/model.uv");
+  double u, v;
+  while (fin >> u >> v) {
+    uv.push_back(cv::Point_<double>(u, v));
+  }
+  fin.close();
+
   fin.open("Data/model.tri");
   int x;
   while (fin >> x) {
@@ -124,15 +153,8 @@ void capture() {
   }
   fin.close();
 
-  fin.open("Data/model.uv");
-  int u, v;
-  while (fin >> u >> v) {
-    uv.push_back(cv::Point_<double>(u, v));
-  }
-  fin.close();
-
   frame = new Frame();
-  frame->setStrategy(0);
+  frame->setStrategy(strategy);
   frame->start(image, uv, tris);
   std::cout << "connect done" << std::endl;
 
@@ -148,28 +170,20 @@ void capture() {
     return;
   }
 
+  cv::Mat displayImage;
   while (true) {
     capture >> image;
     pyrDown(image, image, cv::Size(image.cols / 2, image.rows / 2));
     int result = calnFeatures(image, uv, vertices);
     if (result > 0) {
       frame->update(image, uv, vertices);
+      displayImage = displayFeatures(image, uv);
+    } else {
+      displayImage = image;
     }
-    cv::Mat displayImage = displayFeatures(image, uv);
+
     cv::imshow("capture", displayImage);
-    char cmd = cv::waitKey(1);
-    if (cmd == '0') {
-      frame->setStrategy(0);
-    }
-    if (cmd == '1') {
-      frame->setStrategy(1);
-    }
-    if (cmd == '2') {
-      frame->setStrategy(2);
-    }
-    if (cmd == 'e') {
-      break;
-    }
+    cv::waitKey(1);
   }
 
   cv::destroyWindow("capture");

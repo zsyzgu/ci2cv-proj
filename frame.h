@@ -9,7 +9,6 @@ class Frame {
 private:
   Client client;
   int strategy;
-  bool strategyChanged;
   std::vector<int> tris;
   cv::Mat modelImage;
   cv::Mat faceImage;

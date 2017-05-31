@@ -26,23 +26,13 @@ private:
   void cutUV(std::vector<cv::Point_<double> >& input, std::vector<cv::Point_<double> >& output, cv::Rect_<double> rect);
   void readTris();
   cv::Rect_<double> getRegionRect(int trisBeginId, int trisNumber);
-  void saveUV(std::string fileName, std::vector<cv::Point_<double> >& uv);
+  /*void saveUV(std::string fileName, std::vector<cv::Point_<double> >& uv);
   void saveVertices(std::string fileName, std::vector<cv::Point3_<double> >& vertices);
-  void saveTris(std::string fileName, std::vector<int>& tris);
+  void saveTris(std::string fileName, std::vector<int>& tris);*/
 public:
   Frame();
   ~Frame();
   void setStrategy(int strategy);
-  void setTris(const std::vector<int>& tris);
-  void setFaceImage(const cv::Mat& faceImage);
-  void setLeftEyeImage(const cv::Mat& leftEyeImage);
-  void setRightEyeImage(const cv::Mat& rightEyeImage);
-  void setMouthImage(const cv::Mat& mouthImage);
-  void setVertices(const std::vector<cv::Point3_<double> >& vertices);
-  void setFaceUV(const std::vector<cv::Point_<double> >& faceUV);
-  void setLeftEyeUV(const std::vector<cv::Point_<double> >& leftEyeUV);
-  void setRightEyeUV(const std::vector<cv::Point_<double> >& rightEyeUV);
-  void setMouthUV(const std::vector<cv::Point_<double> >& mouthUV);
   cv::Rect_<double> getLeftEyeRect();
   cv::Rect_<double> getRightEyeRect();
   cv::Rect_<double> getMouthRect();

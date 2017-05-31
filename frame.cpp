@@ -50,30 +50,6 @@ cv::Rect_<double> Frame::getRegionRect(int trisBeginId, int trisNumber) {
   return cv::Rect_<double>(minX, minY, maxX - minX, maxY - minY);
 }
 
-void Frame::saveUV(std::string fileName, std::vector<cv::Point_<double> >& uv) {
-  std::ofstream fout(fileName.c_str());
-  for (int i = 0; i < uv.size(); i++) {
-    fout << uv[i].x << " " << uv[i].y << std::endl;
-  }
-  fout.close();
-}
-
-void Frame::saveVertices(std::string fileName, std::vector<cv::Point3_<double> >& vertices) {
-  std::ofstream fout(fileName.c_str());
-  for (int i = 0; i < vertices.size(); i++) {
-    fout << vertices[i].x << " " << vertices[i].y << " " << vertices[i].z << std::endl;
-  }
-  fout.close();
-}
-
-void Frame::saveTris(std::string fileName, std::vector<int>& vertices) {
-  std::ofstream fout(fileName.c_str());
-  for (int i = 0; i < tris.size(); i++) {
-    fout << tris[i] << std::endl;
-  }
-  fout.close();
-}
-
 Frame::Frame() {
   client.start();
 }
@@ -86,46 +62,6 @@ void Frame::setStrategy(int strategy) {
   std::cout << "strategy = " << strategy << std::endl;
   this->strategy = strategy;
   strategyChanged = true;
-}
-
-void Frame::setTris(const std::vector<int>& tris) {
-  this->tris = tris;
-}
-
-void Frame::setFaceImage(const cv::Mat& faceImage) {
-  this->faceImage = faceImage;
-}
-
-void Frame::setLeftEyeImage(const cv::Mat& leftEyeImage) {
-  this->leftEyeImage = leftEyeImage;
-}
-
-void Frame::setRightEyeImage(const cv::Mat& rightEyeImage) {
-  this->rightEyeImage = rightEyeImage;
-}
-
-void Frame::setMouthImage(const cv::Mat& mouthImage) {
-  this->mouthImage = mouthImage;
-}
-
-void Frame::setVertices(const std::vector<cv::Point3_<double> >& vertices) {
-  this->vertices = vertices;
-}
-
-void Frame::setFaceUV(const std::vector<cv::Point_<double> >& faceUV) {
-  this->faceUV = faceUV;
-}
-
-void Frame::setLeftEyeUV(const std::vector<cv::Point_<double> >& leftEyeUV) {
-  this->leftEyeUV = leftEyeUV;
-}
-
-void Frame::setRightEyeUV(const std::vector<cv::Point_<double> >& rightEyeUV) {
-  this->rightEyeUV = rightEyeUV;
-}
-
-void Frame::setMouthUV(const std::vector<cv::Point_<double> >& mouthUV) {
-  this->mouthUV = mouthUV;
 }
 
 cv::Rect_<double> Frame::getLeftEyeRect() {
@@ -164,9 +100,7 @@ void Frame::cutMouthRegion() {
 void Frame::start(cv::Mat modelImage, std::vector<cv::Point_<double> > modelUV, std::vector<int> tris) {
   this->modelImage = modelImage;
   this->modelUV = modelUV;
-  imwrite("Pictures/model.jpg", modelImage);
-  saveUV("Data/model.uv", modelUV);
-  setTris(tris);
+  this->tris = tris;
   client.sendIntArray(3, tris);
 }
 
@@ -177,8 +111,8 @@ void Frame::update(cv::Mat faceImage, std::vector<cv::Point_<double> > faceUV, s
       client.sendPointArray(1, modelUV);
     }
     if (strategy == 2) {
-      setFaceImage(modelImage);
-      setFaceUV(modelUV);
+      this->faceImage = modelImage;
+      this->faceUV = modelUV;
       cutLeftEyeRegion();
       cutRightEyeRegion();
       cutMouthRegion();
@@ -192,11 +126,11 @@ void Frame::update(cv::Mat faceImage, std::vector<cv::Point_<double> > faceUV, s
     strategyChanged = false;
   }
 
-  setVertices(vertices);
+  this->vertices = vertices;
   client.sendPoint3Array(2, vertices);
   if (strategy == 0 || strategy == 1) {
-    setFaceImage(faceImage);
-    setFaceUV(faceUV);
+    this->faceImage = faceImage;
+    this->faceUV = faceUV;
     cutLeftEyeRegion();
     cutRightEyeRegion();
     cutMouthRegion();
@@ -214,7 +148,31 @@ void Frame::update(cv::Mat faceImage, std::vector<cv::Point_<double> > faceUV, s
   }
 }
 
-/*void Frame::updateSave() {
+/*void Frame::saveUV(std::string fileName, std::vector<cv::Point_<double> >& uv) {
+  std::ofstream fout(fileName.c_str());
+  for (int i = 0; i < uv.size(); i++) {
+    fout << uv[i].x << " " << uv[i].y << std::endl;
+  }
+  fout.close();
+}
+
+void Frame::saveVertices(std::string fileName, std::vector<cv::Point3_<double> >& vertices) {
+  std::ofstream fout(fileName.c_str());
+  for (int i = 0; i < vertices.size(); i++) {
+    fout << vertices[i].x << " " << vertices[i].y << " " << vertices[i].z << std::endl;
+  }
+  fout.close();
+}
+
+void Frame::saveTris(std::string fileName, std::vector<int>& vertices) {
+  std::ofstream fout(fileName.c_str());
+  for (int i = 0; i < tris.size(); i++) {
+    fout << tris[i] << std::endl;
+  }
+  fout.close();
+}
+
+void Frame::updateSave() {
   imwrite("Pictures/face.jpg", faceImage);
   saveUV("Data/face.uv", faceUV);
   saveVertices("Data/face.ver", vertices);

@@ -137,9 +137,11 @@ void update(int strategy) {
   std::vector<int> tris;
 
   image = cv::imread("Data/model.jpg");
+  calnFeatures(image, uv, vertices);
 
   std::ifstream fin;
   fin.open("Data/model.uv");
+  uv.clear();
   double u, v;
   while (fin >> u >> v) {
     uv.push_back(cv::Point_<double>(u, v));
@@ -155,7 +157,7 @@ void update(int strategy) {
 
   frame = new Frame();
   frame->setStrategy(strategy);
-  frame->start(image, uv, tris);
+  frame->start(image, uv, vertices, tris);
   std::cout << "connect done" << std::endl;
 
   Avatar* avatar = LoadAvatar("Data/model");
@@ -248,7 +250,7 @@ cv::Mat displayFeatures(const cv::Mat &image, const std::vector<cv::Point_<doubl
 }
 
 int calnFeatures(cv::Mat& image, std::vector<cv::Point_<double> >& uv, std::vector<cv::Point3_<double> >& vertices) {
-  double mToCM = 100;
+  double ratio = 300;
 
   FaceTracker* tracker = LoadFaceTracker(DefaultFaceTrackerModelPathname().c_str());
   FaceTrackerParams* trackerParams = LoadFaceTrackerParams(DefaultFaceTrackerParamsPathname().c_str());
@@ -266,9 +268,9 @@ int calnFeatures(cv::Mat& image, std::vector<cv::Point_<double> >& uv, std::vect
 
   vertices = tracker->get3DShape();
   for (int i = 0; i < vertices.size(); i++) {
-    vertices[i].x = vertices[i].x / mToCM;
-    vertices[i].y = vertices[i].y / mToCM;
-    vertices[i].z = vertices[i].z / mToCM;
+    vertices[i].x = vertices[i].x / ratio;
+    vertices[i].y = vertices[i].y / ratio;
+    vertices[i].z = vertices[i].z / ratio;
   }
 
   delete tracker;

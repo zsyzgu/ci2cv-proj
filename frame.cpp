@@ -96,11 +96,12 @@ void Frame::cutMouthRegion() {
   cutUV(faceUV, mouthUV, rect);
 }
 
-void Frame::start(cv::Mat modelImage, std::vector<cv::Point_<double> > modelUV, std::vector<int> tris) {
+void Frame::start(cv::Mat modelImage, std::vector<cv::Point_<double> > modelUV, std::vector<cv::Point3_<double> > vertices, std::vector<int> tris) {
   this->modelImage = modelImage;
   this->modelUV = modelUV;
   this->tris = tris;
   client.sendImage(0, modelImage);
+  client.sendPoint3Array(2, vertices);
   client.sendPointArray(1, modelUV);
   client.sendIntArray(3, tris);
   this->faceImage = modelImage;

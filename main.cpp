@@ -249,6 +249,59 @@ cv::Mat displayFeatures(const cv::Mat &image, const std::vector<cv::Point_<doubl
   return displayed_image;
 }
 
+void enlargeEyes(std::vector<cv::Point_<double> >& uv, std::vector<cv::Point3_<double> >& vertices) {
+  int s0 = 36, s1 = 42, len = 6;
+  double k = 1.3, x, y;
+
+  /*x = 0, y = 0;
+  for (int i = s0; i < s0 + len; i++) {
+    x += uv[i].x;
+    y += uv[i].y;
+  }
+  x /= len;
+  y /= len;
+  for (int i = s0; i < s0 + len; i++) {
+    uv[i].x = (uv[i].x - x) * k + x;
+    uv[i].y = (uv[i].y - y) * k + y;
+  }
+
+  x = 0, y = 0;
+  for (int i = s1; i < s1 + len; i++) {
+    x += uv[i].x;
+    y += uv[i].y;
+  }
+  x /= len;
+  y /= len;
+  for (int i = s1; i < s1 + len; i++) {
+    uv[i].x = (uv[i].x - x) * k + x;
+    uv[i].y = (uv[i].y - y) * k + y;
+  }*/
+
+  x = 0, y = 0;
+  for (int i = s0; i < s0 + len; i++) {
+    x += vertices[i].x;
+    y += vertices[i].y;
+  }
+  x /= len;
+  y /= len;
+  for (int i = s0; i < s0 + len; i++) {
+    vertices[i].x = (vertices[i].x - x) * k + x;
+    vertices[i].y = (vertices[i].y - y) * k + y;
+  }
+
+  x = 0, y = 0;
+  for (int i = s1; i < s1 + len; i++) {
+    x += vertices[i].x;
+    y += vertices[i].y;
+  }
+  x /= len;
+  y /= len;
+  for (int i = s1; i < s1 + len; i++) {
+    vertices[i].x = (vertices[i].x - x) * k + x;
+    vertices[i].y = (vertices[i].y - y) * k + y;
+  }
+}
+
 int calnFeatures(cv::Mat& image, std::vector<cv::Point_<double> >& uv, std::vector<cv::Point3_<double> >& vertices) {
   double ratio = 300;
 
@@ -260,13 +313,15 @@ int calnFeatures(cv::Mat& image, std::vector<cv::Point_<double> >& uv, std::vect
   int result = tracker->NewFrame(grayImage, trackerParams);
 
   uv = tracker->getShape();
+  vertices = tracker->get3DShape();
+
+  enlargeEyes(uv, vertices);
 
   for (int i = 0; i < uv.size(); i++) {
     uv[i].x = uv[i].x / image.cols;
     uv[i].y = 1 - uv[i].y / image.rows;
   }
 
-  vertices = tracker->get3DShape();
   for (int i = 0; i < vertices.size(); i++) {
     vertices[i].x = vertices[i].x / ratio;
     vertices[i].y = vertices[i].y / ratio;
